@@ -1,78 +1,154 @@
+#![allow(dead_code)]
 use macroquad::{
     prelude::*,
     ui::{hash, root_ui, widgets},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct Tile {
+    position: Vec2,
+    center: Vec2,
     coord: Vec2,
-    color: Color,
+    kind: TileKind,
     is_mouse_over: bool,
 }
 
+#[derive(Debug, Clone, Copy)]
+enum TileKind {
+    Blank,
+    Mine,
+    Spawn,
+}
+
 struct Grid {
-    width: u32,
-    height: u32,
-    hex_size: f32,
+    dimension: Vec2,
+    tile_size: f32,
     tiles: Vec<Tile>,
 }
 impl Grid {
-    fn new(width: u32, height: u32, hex_size: f32) -> Self {
+    fn new(width: f32, height: f32, tile_size: f32) -> Self {
         Self {
-            width,
-            height,
-            hex_size,
-            tiles: Self::fill_grid(width, height),
+            dimension: vec2(width, height),
+            tile_size,
+            tiles: vec![],
         }
     }
 
-    fn fill_grid(width: u32, height: u32) -> Vec<Tile> {
-        let mut result: Vec<Tile> = vec![];
+    fn fill_grid(&mut self) {
+        let start_pos = Vec2::new(screen_width() / 5., screen_height() / 6.);
 
-        for j in 0..width {
-            for i in 0..height {
-                result.push(Tile {
-                    coord: vec2(i as f32, j as f32),
-                    color: BLACK,
+        for i in 0..self.dimension.x as i32 {
+            for j in 0..self.dimension.y as i32 {
+                let coord = vec2(i as f32, j as f32);
+
+                let x = start_pos.x + coord.x * self.tile_size;
+                let y = start_pos.y + coord.y * self.tile_size;
+
+                self.tiles.push(Tile {
+                    position: vec2(x, y),
+                    center: vec2(x + self.tile_size / 2., y + self.tile_size / 2.),
+                    coord,
+                    kind: TileKind::Blank,
                     is_mouse_over: false,
                 });
             }
         }
+    }
 
-        result
+    fn create_spawns() {
+        // TODO
+    }
+
+    fn create_mines() {
+        // TODO
     }
 
     fn draw_grid(&self) {
-        let start_pos = Vec2::new(screen_width() / 5., screen_height() / 6.);
-
-        // Horizontal distance between centers
-        let hex_width = self.hex_size * 1.5;
-        // Vertical distance between centers
-        let hex_height = self.hex_size * 3_f32.sqrt() / 2.;
-
-        for j in 0..self.height {
-            for i in 0..self.width {
-                let x = start_pos.x + i as f32 * hex_width;
-                let y = start_pos.y
-                    + j as f32 * hex_height * 2.
-                    + if i % 2 != 0 { hex_height } else { 0. };
-
-                draw_hexagon(x, y, self.hex_size, 1., false, GREEN, BLACK);
-                draw_text(&format!("{},{}", i, j), x - 10., y + 5., 20., WHITE);
+        for tile in self.tiles.clone() {
+            match tile.kind {
+                TileKind::Blank => {
+                    draw_rectangle_lines(
+                        tile.position.x,
+                        tile.position.y,
+                        self.tile_size,
+                        self.tile_size,
+                        1.,
+                        GREEN,
+                    );
+                }
+                TileKind::Mine => {
+                    draw_rectangle(
+                        tile.position.x,
+                        tile.position.y,
+                        self.tile_size,
+                        self.tile_size,
+                        YELLOW,
+                    );
+                }
+                TileKind::Spawn => {
+                    draw_rectangle(
+                        tile.position.x,
+                        tile.position.y,
+                        self.tile_size,
+                        self.tile_size,
+                        BLUE,
+                    );
+                }
             }
+
+            draw_rectangle(tile.center.x, tile.center.y, 5., 5., RED);
+
+            // Draw Coordinates and Position vectos
+            draw_text(
+                &format!("{},{}", tile.coord.x, tile.coord.y),
+                tile.position.x + self.tile_size / 4.,
+                tile.position.y + self.tile_size / 3.,
+                15.,
+                WHITE,
+            );
+            draw_text(
+                &format!(
+                    "{},{}",
+                    (tile.position.x + self.tile_size / 2.) as i32,
+                    (tile.position.y + self.tile_size / 2.) as i32
+                ),
+                tile.position.x + self.tile_size / 4.,
+                tile.position.y + self.tile_size - self.tile_size / 6.,
+                10.,
+                LIGHTGRAY,
+            );
         }
     }
 }
 
-#[macroquad::main("HexaGrid")]
+#[macroquad::main("NetWar")]
 async fn main() {
-    let grid = Grid::new(12, 6, 30.);
+    let mut grid = Grid::new(12., 6., 45.);
+    grid.fill_grid();
+
     let mut command = String::new();
     let mut cmd_history: Vec<String> = vec![];
 
     loop {
         clear_background(BLACK);
         grid.draw_grid();
+
+        widgets::Window::new(
+            hash!(),
+            vec2(
+                screen_width() - screen_width() / 2.,
+                screen_height() - screen_height() / 3.,
+            ),
+            vec2(300., 100.),
+        )
+        .label("STATS")
+        .movable(true)
+        .ui(&mut *root_ui(), |ui| {
+            ui.label(None, "Bits:");
+            ui.label(None, "Units:");
+            ui.separator();
+            ui.label(None, "Mines controlled:");
+        });
 
         widgets::Window::new(
             hash!(),
