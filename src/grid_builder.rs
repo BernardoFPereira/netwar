@@ -1,11 +1,12 @@
 use crate::prelude::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Tile {
     pub position: Vec2,
     pub center: Vec2,
     pub coord: Vec2,
     pub kind: TileKind,
+    pub designation: String,
     pub is_mouse_over: bool,
 }
 
@@ -33,8 +34,8 @@ impl Grid {
     pub fn fill_grid(&mut self) {
         let start_pos = Vec2::new(screen_width() / 5., screen_height() / 6.);
 
-        for i in 0..self.dimension.x as i32 {
-            for j in 0..self.dimension.y as i32 {
+        for j in 0..self.dimension.y as i32 {
+            for i in 0..self.dimension.x as i32 {
                 let coord = vec2(i as f32, j as f32);
 
                 let x = start_pos.x + coord.x * self.tile_size;
@@ -45,38 +46,44 @@ impl Grid {
                     center: vec2(x + self.tile_size / 2., y + self.tile_size / 2.),
                     coord,
                     kind: TileKind::Blank,
+                    designation: "".to_owned(),
                     is_mouse_over: false,
                 });
             }
         }
     }
 
-    fn create_spawns() {
+    pub fn idx_to_coord(&self, idx: i32) -> Vec2 {
+        let x = idx % self.dimension.x as i32;
+        let y = idx * self.dimension.y as i32;
+
+        vec2(x as f32, y as f32)
+    }
+
+    pub fn coord_to_idx(&self, x: f32, y: f32) -> i32 {
+        ((y * self.dimension.x) + x) as i32
+    }
+
+    pub fn create_strongholds(&mut self) {
         // TODO
+        rand::srand(miniquad::date::now() as u64);
+        // for _ in 0..amount {
+        let rng_idx = (rand::gen_range(0, self.tiles.len())) as usize;
+        println!("{}", rng_idx);
+        self.tiles[rng_idx].kind = TileKind::Stronghold;
+        self.tiles[rng_idx].designation = "S1".to_owned();
+        // }
     }
 
     pub fn create_mines(&mut self, amount: i32) {
-        // TODO
-        for _ in 0..amount {
-            // vec2(x, y) of the tile to become a Mine
-            let mine_pos = vec2(
-                rand::gen_range(2., self.dimension.x - 2.),
-                rand::gen_range(1., self.dimension.y - 1.),
-            );
-
-            self.tiles.iter_mut().for_each(|t| {
-                if t.coord == mine_pos {
-                    t.kind = TileKind::Mine;
-                }
-            });
+        // TODO: continue this
+        rand::srand(miniquad::date::now() as u64);
+        for i in 0..amount {
+            let rng_idx = (rand::gen_range(0, self.tiles.len())) as usize;
+            println!("{}", rng_idx);
+            self.tiles[rng_idx].kind = TileKind::Mine;
+            self.tiles[rng_idx].designation = format!("M{}", i);
         }
-        // self.tiles.iter_mut().for_each(|t| {
-        //     if (t.coord.x > 1. && t.coord.x < 10.) && (t.coord.y > 0. && t.coord.y < 5.) {
-        //         t.kind = TileKind::Mine
-        //     } else {
-        //         t.kind = TileKind::Blank
-        //     }
-        // });
     }
 
     pub fn draw_grid(&self) {
@@ -122,17 +129,13 @@ impl Grid {
                 15.,
                 WHITE,
             );
-            // draw_text(
-            //     &format!(
-            //         "{},{}",
-            //         (tile.position.x + self.tile_size / 2.) as i32,
-            //         (tile.position.y + self.tile_size / 2.) as i32
-            //     ),
-            //     tile.position.x + self.tile_size / 4.,
-            //     tile.position.y + self.tile_size - self.tile_size / 6.,
-            //     10.,
-            //     LIGHTGRAY,
-            // );
+            draw_text(
+                &format!("{}", tile.designation),
+                tile.position.x + self.tile_size / 4.,
+                tile.position.y + self.tile_size - self.tile_size / 6.,
+                30.,
+                LIGHTGRAY,
+            );
         }
     }
 }
