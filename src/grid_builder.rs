@@ -10,13 +10,14 @@ pub struct Tile {
     pub is_mouse_over: bool,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TileKind {
     Blank,
     Mine,
     Stronghold,
 }
 
+#[derive(Debug, Clone)]
 pub struct Grid {
     pub dimension: Vec2,
     pub tile_size: f32,
